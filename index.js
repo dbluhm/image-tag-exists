@@ -11,55 +11,55 @@ const domainName = `${domainNameComponent}(?:\\.${domainNameComponent})*`;
 const ipv6address = '\\[(?:[a-fA-F0-9:]+)\\]';
 const host = `(?:${domainName}|${ipv6address})`;
 const domain = `${host}(?:[:][0-9]+)?`;
-const domainRegExp = new RegExp(domain);
 const tagRegExp = /^[\w][\w.-]{0,127}$/;
 const name = `^(${domain}/)?(${nameComponent}(?:/${nameComponent})*)$`;
 const nameRegExp = new RegExp(name);
 
 
-function main() {
+async function run() {
   try {
     const imageTag = core.getInput('tag');
     const username = core.getInput('username')
     const password = core.getInput('password')
     const token = core.getInput('token')
-    core.info(`Checking ${registry} for tag ${imageTag}`)
+    core.info(`Checking for tag ${imageTag}`)
 
-    if (imageTag.split(':').length - 1 != 2) {
+    if (imageTag.split(':').length != 2) {
       core.setFailed('Improperly formatted tag, expected something like example/image:tag');
       return;
     }
 
     const [fullname, tag] = imageTag.split(':', 2);
-
+    core.debug(`fullname: ${fullname}, tag: ${tag}`)
     if (!tag.match(tagRegExp) || !fullname.match(nameRegExp)) {
       core.setFailed('Improperly formatted tag, expected something like example/image:tag');
       return;
     }
 
-    const [registry, name] = fullname.match(nameRegExp);
+    const [_, registry, name] = fullname.match(nameRegExp);
+    core.debug(`registry: ${registry}, name: ${name}`)
+    core.info(`Querying https://${registry.slice(0, -1)}/v2/${name}/tags/list`);
 
-    axios.get(
+    const res = await axios.get(
       `https://${registry}/v2/${name}/tags/list`,
       {
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${btoa(token)}`
         }
       }
-    ).then(res => {
-      if (res.status >= 200 && res.status < 400) {
-        if ('tags' in res.data) {
-          core.setOutput('exists', res.data.tags.includes(tag));
-        }
-      } else {
-        core.setOutput('exists', false);
+    );
+    if (res.status >= 200 && res.status < 400) {
+      if ('tags' in res.data) {
+        core.debug(JSON.stringify(res.data));
+        core.setOutput('exists', res.data.tags.includes(tag));
       }
-    }).catch(error => {
+    } else {
+      core.debug(JSON.stringify(res.data));
       core.setOutput('exists', false);
-    });
+    }
   } catch (error) {
     core.setFailed(error.message);
   }
 }
 
-main();
+run();
