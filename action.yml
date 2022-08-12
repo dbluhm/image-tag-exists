@@ -1,0 +1,21 @@
+name: "Image Tag Exists"
+description: 'Check if an image tag exists'
+inputs:
+  tag:
+    description: 'Image tag to check'
+    required: true
+  username:
+    description: 'Username used to log against the Docker registry'
+    required: false
+  password:
+    description: 'Password or personal access token used to log against the Docker registry'
+    required: false
+  token:
+    description: 'Password or personal access token used to log against the Docker registry'
+    required: false
+outputs:
+  exists:
+    description: 'Whether the tag exists'
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
