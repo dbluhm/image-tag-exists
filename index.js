@@ -1,5 +1,4 @@
 const core = require('@actions/core');
-const github = require('@actions/github');
 const axios = require('axios').default;
 
 
@@ -15,6 +14,11 @@ const tagRegExp = /^[\w][\w.-]{0,127}$/;
 const name = `^(${domain}/)?(${nameComponent}(?:/${nameComponent})*)$`;
 const nameRegExp = new RegExp(name);
 
+function exists(status) {
+  core.info(`Tag exists? ${status}`);
+  core.setOutput('exists', status);
+  return status;
+}
 
 async function run() {
   try {
@@ -51,14 +55,15 @@ async function run() {
       );
       if ('tags' in res.data) {
         core.debug(JSON.stringify(res.data));
-        core.setOutput('exists', res.data.tags.includes(tag));
+        exists(res.data.tags.includes(tag));
       } else {
+        core.info('Got unexpected data back from registry. See debug info for more details.')
         core.debug(JSON.stringify(res.data));
-        core.setOutput('exists', false);
+        exists(false);
       }
     } catch(error) {
       core.debug(error.response.status);
-      core.setOutput('exists', false);
+      exists(false)
     }
   } catch (error) {
     core.setFailed(error.message);
