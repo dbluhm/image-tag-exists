@@ -40,21 +40,24 @@ async function run() {
     core.debug(`registry: ${registry}, name: ${name}`)
     core.info(`Querying https://${registry.slice(0, -1)}/v2/${name}/tags/list`);
 
-    const res = await axios.get(
-      `https://${registry}/v2/${name}/tags/list`,
-      {
-        headers: {
-          Authorization: `Bearer ${btoa(token)}`
+    try {
+      const res = await axios.get(
+        `https://${registry}/v2/${name}/tags/list`,
+        {
+          headers: {
+            Authorization: `Bearer ${btoa(token)}`
+          }
         }
-      }
-    );
-    if (res.status >= 200 && res.status < 400) {
+      );
       if ('tags' in res.data) {
         core.debug(JSON.stringify(res.data));
         core.setOutput('exists', res.data.tags.includes(tag));
+      } else {
+        core.debug(JSON.stringify(res.data));
+        core.setOutput('exists', false);
       }
-    } else {
-      core.debug(JSON.stringify(res.data));
+    } catch(error) {
+      core.debug(error.response.status);
       core.setOutput('exists', false);
     }
   } catch (error) {
